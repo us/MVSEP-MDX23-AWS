@@ -1,4 +1,3 @@
-# coding: utf-8
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -27,7 +26,6 @@ import warnings
 from modules.tfc_tdf_v3 import TFC_TDF_net, STFT
 from scipy.signal import resample_poly
 from modules.segm_models import Segm_Models_Net
-import os
 
 
 class Conv_TDF_net_trim_model(nn.Module):
@@ -142,7 +140,7 @@ def demix_base_mdxv3(model, mix, device):
         est_s = estimated_sources.cpu().numpy()
         return est_s
 
-def demix_full_mdx23c(mix, device, model):
+def demix_full_mdx23c(mix, device, model, options):
     if options["BigShifts"] <= 0:
         bigshifts = 1
     else:
@@ -254,7 +252,7 @@ def demix(mix, device, models, infer_session, overlap=0.2):
 
     return source
 
-def demix_vitlarge(model, mix, device, options):
+def demix_vitlarge(model, mix, device):
     C = model.config.audio.hop_length * (2 * model.config.inference.dim_t - 1)
     N = options["overlap_VitLarge"]
     step = C // N
@@ -301,7 +299,7 @@ def demix_full_vitlarge(mix, device, model, options):
     
     for shift in tqdm(shifts, position=0):
         shifted_mix = torch.cat((mix[:, -shift:], mix[:, :-shift]), dim=-1)
-        sources = demix_vitlarge(model, shifted_mix, device, options=options)
+        sources = demix_vitlarge(model, shifted_mix, device)
         sources1 = sources["vocals"] * 1.002 # volume compensation
         sources2 = sources["other"]
         restored_sources1 = np.concatenate((sources1[..., shift:], sources1[..., :shift]), axis=-1)
@@ -317,63 +315,147 @@ def demix_full_vitlarge(mix, device, model, options):
 
 
 class EnsembleDemucsMDXMusicSeparationModel:
+    """
+    Doesn't do any separation just passes the input back as output
+    """
     def __init__(self, options, model_dir):
-        device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
-        if options.get('cpu', False):
-            device = 'cpu'
-
-        self.single_onnx = options.get('single_onnx', False)
-        self.overlap_demucs = float(options.get('overlap_demucs', 0.1))
-        self.overlap_MDX = float(options.get('overlap_VOCFT', 0.1))
-        self.overlap_demucs = min(max(self.overlap_demucs, 0.0), 0.99)
-        self.overlap_MDX = min(max(self.overlap_MDX, 0.0), 0.99)
-        
-        self.model_folder = model_dir
-
-        # Initialize MDXv3 and VitLarge models
-        self.init_mdxv3()
-        self.init_vitlarge()
-
-        if options.get('use_VOCFT', False):
-            self.init_vocft()
-
-        self.device = device
+        """
+            options - user options
+        """
         self.options = options
+        if torch.cuda.is_available():
+            device = 'cuda:0'
+        else:
+            device = 'cpu'
+        if 'cpu' in options:
+            if options['cpu']:
+                device = 'cpu'
+        # print('Use device: {}'.format(device))
+        self.single_onnx = False
+        if 'single_onnx' in options:
+            if options['single_onnx']:
+                self.single_onnx = True
+                # print('Use single vocal ONNX')
+        self.overlap_demucs = float(options['overlap_demucs'])
+        self.overlap_MDX = float(options['overlap_VOCFT'])
+        if self.overlap_demucs > 0.99:
+            self.overlap_demucs = 0.99
+        if self.overlap_demucs < 0.0:
+            self.overlap_demucs = 0.0
+        if self.overlap_MDX > 0.99:
+            self.overlap_MDX = 0.99
+        if self.overlap_MDX < 0.0:
+            self.overlap_MDX = 0.0
+        model_folder = model_dir
+        """
+        
+        remote_url = 'https://dl.fbaipublicfiles.com/demucs/hybrid_transformer/04573f0d-f3cf25b2.th'
+        model_path = model_folder + '04573f0d-f3cf25b2.th'
+        if not os.path.isfile(model_path):
+            torch.hub.download_url_to_file(remote_url, model_folder + '04573f0d-f3cf25b2.th')
+        model_vocals = load_model(model_path)
+        model_vocals.to(device)
+        self.model_vocals_only = model_vocals
+        """
 
-    def init_mdxv3(self):
+        if options['vocals_only'] is False:
+            self.models = []
+            self.weights_vocals = np.array([10, 1, 8, 9])
+            self.weights_bass = np.array([19, 4, 5, 8])
+            self.weights_drums = np.array([18, 2, 4, 9])
+            self.weights_other = np.array([14, 2, 5, 10])
+
+            model1 = pretrained.get_model('htdemucs_ft')
+            model1.to(device)
+            self.models.append(model1)
+
+            model2 = pretrained.get_model('htdemucs')
+            model2.to(device)
+            self.models.append(model2)
+
+            model3 = pretrained.get_model('htdemucs_6s')
+            model3.to(device)
+            self.models.append(model3)
+
+            model4 = pretrained.get_model('hdemucs_mmi')
+            model4.to(device)
+            self.models.append(model4)
+
+            if 0:
+                for model in self.models:
+                  pass
+                  # print(model.sources)
+            '''
+            ['drums', 'bass', 'other', 'vocals']
+            ['drums', 'bass', 'other', 'vocals']
+            ['drums', 'bass', 'other', 'vocals', 'guitar', 'piano']
+            ['drums', 'bass', 'other', 'vocals']
+            '''
+
+        if device == 'cpu':
+            chunk_size = 200000000
+            providers = ["CPUExecutionProvider"]
+        else:
+            chunk_size = 1000000
+            providers = ["CUDAExecutionProvider"]
+        if 'chunk_size' in options:
+            chunk_size = int(options['chunk_size'])
+
+        #MDXv3 init
         print("Loading InstVoc into memory")
-        model_path = os.path.join(self.model_folder, 'MDX23C-8KFFT-InstVoc_HQ.ckpt')
-        config_path = os.path.join(self.model_folder, 'model_2_stem_full_band_8k.yaml')
+        remote_url_mdxv3 = 'https://github.com/TRvlvr/model_repo/releases/download/all_public_uvr_models/MDX23C-8KFFT-InstVoc_HQ.ckpt'
+        remote_url_conf_mdxv3 = 'https://raw.githubusercontent.com/TRvlvr/application_data/main/mdx_model_data/mdx_c_configs/model_2_stem_full_band_8k.yaml'
+        if not os.path.isfile(model_folder+'MDX23C-8KFFT-InstVoc_HQ.ckpt'):
+            torch.hub.download_url_to_file(remote_url_mdxv3, model_folder+'MDX23C-8KFFT-InstVoc_HQ.ckpt')
+        if not os.path.isfile(model_folder+'model_2_stem_full_band_8k.yaml'):
+            torch.hub.download_url_to_file(remote_url_conf_mdxv3, model_folder+'model_2_stem_full_band_8k.yaml')
 
-        # Assuming existence checks are handled elsewhere or files are guaranteed to exist
-        with open(config_path) as f:
+        with open(model_folder + 'model_2_stem_full_band_8k.yaml') as f:
             config_mdxv3 = ConfigDict(yaml.load(f, Loader=yaml.FullLoader))
 
         self.model_mdxv3 = TFC_TDF_net(config_mdxv3)
-        self.model_mdxv3.load_state_dict(torch.load(model_path))
-        self.model_mdxv3.to(self.device).eval()
+        self.model_mdxv3.load_state_dict(torch.load(model_folder+'MDX23C-8KFFT-InstVoc_HQ.ckpt'))
+        self.device = torch.device(device)
+        self.model_mdxv3 = self.model_mdxv3.to(device)
+        self.model_mdxv3.eval()
 
-    def init_vitlarge(self):
+        #VitLarge init
         print("Loading VitLarge into memory")
-        model_path = os.path.join(self.model_folder, 'model_vocals_segm_models_sdr_9.77.ckpt')
-        config_path = os.path.join(self.model_folder, 'config_vocals_segm_models.yaml')
+        remote_url_vitlarge = 'https://github.com/ZFTurbo/Music-Source-Separation-Training/releases/download/v1.0.0/model_vocals_segm_models_sdr_9.77.ckpt'
+        remote_url_vl_conf = 'https://github.com/ZFTurbo/Music-Source-Separation-Training/releases/download/v1.0.0/config_vocals_segm_models.yaml'
+        if not os.path.isfile(model_folder+'model_vocals_segm_models_sdr_9.77.ckpt'):
+            torch.hub.download_url_to_file(remote_url_vitlarge, model_folder+'model_vocals_segm_models_sdr_9.77.ckpt')
+        if not os.path.isfile(model_folder+'config_vocals_segm_models.yaml'):
+            torch.hub.download_url_to_file(remote_url_vl_conf, model_folder+'config_vocals_segm_models.yaml')
 
-        # Load and initialize VitLarge model
-        with open(config_path) as f:
+        with open(model_folder + 'config_vocals_segm_models.yaml') as f:
             config_vl = ConfigDict(yaml.load(f, Loader=yaml.FullLoader))
 
         self.model_vl = Segm_Models_Net(config_vl)
-        self.model_vl.load_state_dict(torch.load(model_path))
-        self.model_vl.to(self.device).eval()
+        self.model_vl.load_state_dict(torch.load(model_folder+'model_vocals_segm_models_sdr_9.77.ckpt'))
+        self.device = torch.device(device)
+        self.model_vl = self.model_vl.to(device)
+        self.model_vl.eval()
 
-    def init_vocft(self):
-        print("Loading VOCFT into memory")
-        model_path = os.path.join(self.model_folder, 'UVR-MDX-NET-Voc_FT.onnx')
-        
-        # Initialize the ONNX model
-        providers = ["CUDAExecutionProvider"] if self.device != 'cpu' else ["CPUExecutionProvider"]
-        self.infer_session1 = ort.InferenceSession(model_path, providers=providers)
+        # VOCFT init
+        if options['use_VOCFT'] is True:
+            print("Loading VOCFT into memory")
+            self.chunk_size = chunk_size
+            self.mdx_models1 = get_models('tdf_extra', load=False, device=device, vocals_model_type=2)
+            model_path_onnx1 = model_folder + 'UVR-MDX-NET-Voc_FT.onnx'
+            remote_url_onnx1 = 'https://github.com/TRvlvr/model_repo/releases/download/all_public_uvr_models/UVR-MDX-NET-Voc_FT.onnx'
+            if not os.path.isfile(model_path_onnx1):
+                torch.hub.download_url_to_file(remote_url_onnx1, model_path_onnx1)
+            # print('Model path: {}'.format(model_path_onnx1))
+            # print('Device: {} Chunk size: {}'.format(device, chunk_size))
+            self.infer_session1 = ort.InferenceSession(
+                model_path_onnx1,
+                providers=providers,
+                provider_options=[{"device_id": 0}],
+            )
 
+        self.device = device
+        pass
         
     @property
     def instruments(self):
@@ -411,12 +493,8 @@ class EnsembleDemucsMDXMusicSeparationModel:
         output_sample_rates = {}
         #print(mixed_sound_array.T.shape)
         #audio = np.expand_dims(mixed_sound_array.T, axis=0)
-        # audio = torch.from_numpy(mixed_sound_array.T).type('torch.FloatTensor').to(self.device)
-        if not isinstance(mixed_sound_array, torch.Tensor):
-            audio = torch.from_numpy(mixed_sound_array.T).type(torch.FloatTensor)
-        else:
-            audio = mixed_sound_array.T.float()
-        audio = audio.to(self.device)
+        audio = torch.from_numpy(mixed_sound_array.T).type('torch.FloatTensor').to(self.device)
+
         overlap_demucs = self.overlap_demucs
         overlap_MDX = self.overlap_MDX
         shifts = 0
@@ -443,7 +521,7 @@ class EnsembleDemucsMDXMusicSeparationModel:
 
         
         print('Processing vocals with MDXv3 InstVocHQ model...')
-        sources3 = demix_full_mdx23c(mixed_sound_array.T, self.device, self.model_mdxv3)
+        sources3 = demix_full_mdx23c(mixed_sound_array.T, self.device, self.model_mdxv3, self.options)
         vocals3 = match_array_shapes(sources3, mixed_sound_array.T)
         # print('Time: {:.0f} sec'.format(time() - start_time))
         # sf.write("vocals3.wav", sources3.T, 44100)
@@ -640,4 +718,3 @@ def match_array_shapes(array_1:np.ndarray, array_2:np.ndarray):
         padding = array_2.shape[1] - array_1.shape[1]
         array_1 = np.pad(array_1, ((0,0), (0,padding)), 'constant', constant_values=0)
     return array_1
-
