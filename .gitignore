@@ -1,0 +1,23 @@
+# Python
+*.pyc
+*.pyo
+__pycache__/
+.venv/
+env/
+dist/
+build/
+*.egg-info/
+# DS Code
+*.DS_Store
+
+# Model Files
+*.ckpt
+*.onnx
+
+MDX23C-8KFFT-InstVoc_HQ.ckpt
+model_2_stem_full_band_8k.yaml
+UVR-MDX-NET-Voc_FT.onnx
+model_vocals_segm_models_sdr_9.77.ckpt
+config_vocals_segm_models.yaml
+sagemaker_v2.tar.gz
+model_2_stem_061321.yaml
