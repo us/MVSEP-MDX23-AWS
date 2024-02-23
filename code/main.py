@@ -331,11 +331,11 @@ class EnsembleDemucsMDXMusicSeparationModel:
         self.model_folder = model_dir
 
         # Initialize MDXv3 and VitLarge models
-        self.init_mdxv3(options, device)
-        self.init_vitlarge(options, device)
+        self.init_mdxv3()
+        self.init_vitlarge()
 
         if options.get('use_VOCFT', False):
-            self.init_vocft(options, device)
+            self.init_vocft()
 
         self.device = device
         self.options = options
