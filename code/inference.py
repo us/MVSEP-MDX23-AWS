@@ -12,7 +12,7 @@ logger.setLevel(logging.DEBUG)  # Set to DEBUG for development, INFO for product
 
 # Default options for model prediction
 default_options = {
-    "cpu": True,
+    "cpu": False,
     "overlap_demucs": 0.1,
     "overlap_VOCFT": 0.1,
     "overlap_VitLarge": 1,
@@ -21,7 +21,7 @@ default_options = {
     "weight_VOCFT": 1,
     "weight_VitLarge": 5,
     "single_onnx": False,
-    "large_gpu": False,
+    "large_gpu": True,
     "BigShifts": 7,
     "vocals_only": False,
     "use_VOCFT": False,
