@@ -6,22 +6,24 @@ import torchaudio
 def main():
     # Set the model directory (adjust this to your model's location)
     model_dir = '../'
-    inference.default_options = {
-    "cpu": True,
-    "overlap_demucs": 0.1,
-    "overlap_VOCFT": 0.1,
-    "overlap_VitLarge": 1,
-    "overlap_InstVoc": 1,
-    "weight_InstVoc": 8,
-    "weight_VOCFT": 1,
-    "weight_VitLarge": 5,
-    "single_onnx": False,
-    "large_gpu": False,
-    "BigShifts": 7,
-    "vocals_only": False,
-    "use_VOCFT": False,
-    "output_format": "FLOAT",
-}
+    cpu_test = False
+    if cpu_test:
+        inference.default_options = {
+        "cpu": True,
+        "overlap_demucs": 0.1,
+        "overlap_VOCFT": 0.1,
+        "overlap_VitLarge": 1,
+        "overlap_InstVoc": 1,
+        "weight_InstVoc": 8,
+        "weight_VOCFT": 1,
+        "weight_VitLarge": 5,
+        "single_onnx": False,
+        "large_gpu": False,
+        "BigShifts": 7,
+        "vocals_only": False,
+        "use_VOCFT": False,
+        "output_format": "FLOAT",
+    }
     # Load your model with default_options
     # Assuming default_options is accessible within your inference script
     model = inference.model_fn(model_dir)
