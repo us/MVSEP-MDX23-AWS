@@ -99,7 +99,7 @@ def get_models(name, device, load=True, vocals_model_type=0):
 
     return [model_vocals]
 
-def demix_base_mdxv3(model, mix, device):
+def demix_base_mdxv3(model, mix, device, options):
     N = options["overlap_InstVoc"]
     mix = np.array(mix, dtype=np.float32)
     mix = torch.tensor(mix, dtype=torch.float32)
@@ -152,7 +152,7 @@ def demix_full_mdx23c(mix, device, model, options):
 
     for shift in tqdm(shifts, position=0):
         shifted_mix = np.concatenate((mix[:, -shift:], mix[:, :-shift]), axis=-1)
-        sources = demix_base_mdxv3(model, shifted_mix, device)["Vocals"]
+        sources = demix_base_mdxv3(model, shifted_mix, device, options)["Vocals"]
         sources *= 1.0005168 # volume compensation
         restored_sources = np.concatenate((sources[..., shift:], sources[..., :shift]), axis=-1)
         results.append(restored_sources)
@@ -252,7 +252,7 @@ def demix(mix, device, models, infer_session, overlap=0.2):
 
     return source
 
-def demix_vitlarge(model, mix, device):
+def demix_vitlarge(model, mix, device, options):
     C = model.config.audio.hop_length * (2 * model.config.inference.dim_t - 1)
     N = options["overlap_VitLarge"]
     step = C // N
@@ -299,7 +299,7 @@ def demix_full_vitlarge(mix, device, model, options):
     
     for shift in tqdm(shifts, position=0):
         shifted_mix = torch.cat((mix[:, -shift:], mix[:, :-shift]), dim=-1)
-        sources = demix_vitlarge(model, shifted_mix, device)
+        sources = demix_vitlarge(model, shifted_mix, device, options)
         sources1 = sources["vocals"] * 1.002 # volume compensation
         sources2 = sources["other"]
         restored_sources1 = np.concatenate((sources1[..., shift:], sources1[..., :shift]), axis=-1)
