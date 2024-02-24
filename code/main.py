@@ -365,19 +365,19 @@ class EnsembleDemucsMDXMusicSeparationModel:
             self.weights_drums = np.array([18, 2, 4, 9])
             self.weights_other = np.array([14, 2, 5, 10])
 
-            model1 = pretrained.get_model('htdemucs_ft', repo='../')
+            model1 = pretrained.get_model('htdemucs_ft', repo=pathlib.Path('../'))
             model1.to(device)
             self.models.append(model1)
 
-            model2 = pretrained.get_model('htdemucs', repo='../')
+            model2 = pretrained.get_model('htdemucs', repo=Path('../'))
             model2.to(device)
             self.models.append(model2)
 
-            model3 = pretrained.get_model('htdemucs_6s', repo='../')
+            model3 = pretrained.get_model('htdemucs_6s', repo=Path('../'))
             model3.to(device)
             self.models.append(model3)
 
-            model4 = pretrained.get_model('hdemucs_mmi', repo='../')
+            model4 = pretrained.get_model('hdemucs_mmi', repo=Path('../'))
             model4.to(device)
             self.models.append(model4)
 
