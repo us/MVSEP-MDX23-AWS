@@ -42,6 +42,7 @@ echo "Downloaded $TARGET_FILE_NAME3"
 echo "All models downloaded successfully to $OUTPUT_DIR."
 
 #!/bin/bash
+#!/bin/bash
 
 # MDX Models
 mdx_models=(
@@ -79,30 +80,37 @@ hybrid_transformer_models=(
 
 # Experimental 6 sources model
 experimental_model="5c90dfd2-34c22ccb.th"
+mkdir demucs_repo
+cd demucs_repo
 
 # Download function
 download_file() {
     local url=$1
     local filename=$(basename $url)
     echo "Downloading $url..."
-    wget -q $url -O  "$OUTPUT_DIR/$filename"
+    wget -q $url -O $filename
 }
 
 # Download MDX Models
-# mkdir -p ..
-# cd ..
+mkdir -p mdx_final
+cd mdx_final
 for model in "${mdx_models[@]}"; do
     download_file "https://dl.fbaipublicfiles.com/demucs/mdx_final/$model"
 done
-# cd ..
+cd ..
 
 # Download Hybrid Transformer models
-# mkdir -p hybrid_transformer
-# cd hybrid_transformer
+mkdir -p hybrid_transformer
+cd hybrid_transformer
 for model in "${hybrid_transformer_models[@]}"; do
     download_file "https://dl.fbaipublicfiles.com/demucs/hybrid_transformer/$model"
 done
-# cd ..
+cd ..
 
 # Download Experimental model
 download_file "https://dl.fbaipublicfiles.com/demucs/experimental_models/$experimental_model"
+
+# Additional file
+download_file "https://raw.githubusercontent.com/facebookresearch/demucs/main/demucs/remote/htdemucs_ft.yaml"
+
+echo "Download complete."
