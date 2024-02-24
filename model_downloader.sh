@@ -108,3 +108,9 @@ done
 
 # Download Experimental model
 download_file "https://dl.fbaipublicfiles.com/demucs/experimental_models/$experimental_model"
+
+wget "https://raw.githubusercontent.com/facebookresearch/demucs/main/demucs/remote/htdemucs_ft.yaml"
+wget "https://raw.githubusercontent.com/facebookresearch/demucs/main/demucs/remote/htdemucs.yaml"
+wget "https://raw.githubusercontent.com/facebookresearch/demucs/main/demucs/remote/htdemucs_6s.yaml"
+wget "https://raw.githubusercontent.com/facebookresearch/demucs/main/demucs/remote/hdemucs_mmi.yaml"
+
