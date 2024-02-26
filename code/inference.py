@@ -73,7 +73,7 @@ def output_fn(prediction, accept='application/octet-stream'):
     for instrum in instruments:
         output_name = '_{}.wav'.format(instrum)
         buffer = io.BytesIO()
-        sf.write(buffer, result[instrum], sample_rates[instrum], format='WAV', subtype=default_options.output_format)
+        sf.write(buffer, result[instrum], sample_rates[instrum], format='WAV')
         buffer.seek(0)
         audio_buffers[output_name] = buffer
 
@@ -82,7 +82,7 @@ def output_fn(prediction, accept='application/octet-stream'):
         inst = result['instrum']
         output_name = '_instrum.wav'
         buffer = io.BytesIO()
-        sf.write(buffer, inst, sample_rates.get('instrum', 44100), format='WAV', subtype=default_options.output_format)
+        sf.write(buffer, inst, sample_rates.get('instrum', 44100), format='WAV')
         buffer.seek(0)
         audio_buffers[output_name] = buffer
 
@@ -91,7 +91,7 @@ def output_fn(prediction, accept='application/octet-stream'):
         inst2 = result['bass'] + result['drums'] + result['other']
         output_name = '_instrum2.wav'
         buffer = io.BytesIO()
-        sf.write(buffer, inst2, sample_rates.get('bass', 44100), format='WAV', subtype=default_options.output_format)  # Assuming same SR for all
+        sf.write(buffer, inst2, sample_rates.get('bass', 44100), format='WAV')  # Assuming same SR for all
         buffer.seek(0)
         audio_buffers[output_name] = buffer
 
