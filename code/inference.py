@@ -67,7 +67,9 @@ def input_fn(request_body, request_content_type):
         # Combine audio data and additional parameters in the returned dictionary
         return {
             'audio': audio, 
-            'sr': sample_rate, 
+            'sr': sample_rate,
+            'index': 0,
+            'total': 1,
             # **additional_params  # Merge additional parameters into the return dictionary
         }
     except Exception as e:
