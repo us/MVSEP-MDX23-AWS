@@ -1,6 +1,4 @@
 import inference  # Import your inference script here
-import os
-import torchaudio
 
 
 def main():
@@ -39,7 +37,7 @@ def main():
     prediction, sample_rates, instruments = inference.predict_fn(input_data, model)
 
     # Format the output data
-    output_data = inference.output_fn((prediction, sample_rates, instruments), 'application/json')
+    output_data = inference.output_fn((prediction, sample_rates, instruments), 'application/octet-stream')
 
     # Print the output data
     print(output_data)
