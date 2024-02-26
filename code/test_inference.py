@@ -29,9 +29,12 @@ def main():
     # Simulate incoming audio data (replace 'sample_audio.mp3' with your audio file)
     with open('../sample_audio.mp3', 'rb') as audio_file:
         audio_data = audio_file.read()
-
+    input_json = {
+        "audio": audio_data,
+        "options": {"cpu":cpu_test}
+    }
     # Prepare the input data
-    input_data = inference.input_fn(audio_data, 'application/octet-stream')
+    input_data = inference.input_fn(input_json, 'application/json')
 
     # Make a prediction
     prediction, sample_rates, instruments = inference.predict_fn(input_data, model)

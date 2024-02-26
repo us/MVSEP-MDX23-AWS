@@ -1,3 +1,5 @@
+import base64
+import json
 import logging
 
 import librosa
@@ -35,24 +37,43 @@ def model_fn(model_dir):
     model = EnsembleDemucsMDXMusicSeparationModel(model_dir=model_dir, options=default_options)
     return model
 
+
 def input_fn(request_body, request_content_type):
-    """Preprocess incoming audio data before prediction."""
+    """Preprocess incoming audio data and additional parameters before prediction."""
     logger.info('Processing input data')
-    if request_content_type != 'application/octet-stream':
+    
+    # Ensure the correct content type is being used
+    if request_content_type != 'application/json':
         raise ValueError(f'Unsupported content type: {request_content_type}')
     
     try:
-        audio_buffer = io.BytesIO(request_body)
+        # Parse the JSON body to extract audio data and parameters
+        input_data = json.loads(request_body)
+        
+        # Decode the base64-encoded audio data
+        audio_data_base64 = input_data['audio']
+        audio_data = base64.b64decode(audio_data_base64)
+        audio_buffer = io.BytesIO(audio_data)
+        
+        # Load the audio with librosa
         audio, sample_rate = librosa.load(audio_buffer, mono=False, sr=44100)
         if len(audio.shape) == 1:
             audio = np.stack([audio, audio], axis=0)
-        # # waveform, sample_rate = torchaudio.load(audio_buffer)
-        # if waveform.size(0) == 1:
-        #     waveform = waveform.repeat(2, 1)  # Ensure stereo audio
-        return {'audio': audio, 'sr': sample_rate, 'index': 0, 'total': 1}
+        
+        # Extract additional parameters from the JSON payload
+        # additional_params = {key: value for key, value in input_data.items() if key != 'audio'}
+        global default_options
+        default_options.update(input_data['options'])
+        # Combine audio data and additional parameters in the returned dictionary
+        return {
+            'audio': audio, 
+            'sr': sample_rate, 
+            # **additional_params  # Merge additional parameters into the return dictionary
+        }
     except Exception as e:
-        logger.error(f"Error processing audio with torchaudio: {e}")
+        logger.error(f"Error processing input data: {e}")
         raise
+
 
 def predict_fn(input_data, model):
     """Run prediction on preprocessed audio data."""
