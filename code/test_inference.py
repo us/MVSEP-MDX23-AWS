@@ -29,7 +29,7 @@ def main():
     model = inference.model_fn(model_dir)
 
     # Simulate incoming audio data (replace 'sample_audio.mp3' with your audio file)
-    with open('sample_audio.mp3', 'rb') as audio_file:
+    with open('../sample_audio.mp3', 'rb') as audio_file:
         audio_data = audio_file.read()
 
     # Prepare the input data

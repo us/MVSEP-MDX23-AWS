@@ -365,6 +365,7 @@ class EnsembleDemucsMDXMusicSeparationModel:
             self.weights_drums = np.array([18, 2, 4, 9])
             self.weights_other = np.array([14, 2, 5, 10])
 
+            # todo local load model
             model1 = pretrained.get_model('htdemucs_ft')
             model1.to(device)
             self.models.append(model1)
@@ -403,36 +404,36 @@ class EnsembleDemucsMDXMusicSeparationModel:
 
         #MDXv3 init
         print("Loading InstVoc into memory")
-        remote_url_mdxv3 = 'https://github.com/TRvlvr/model_repo/releases/download/all_public_uvr_models/MDX23C-8KFFT-InstVoc_HQ.ckpt'
-        remote_url_conf_mdxv3 = 'https://raw.githubusercontent.com/TRvlvr/application_data/main/mdx_model_data/mdx_c_configs/model_2_stem_full_band_8k.yaml'
-        if not os.path.isfile(model_folder+'MDX23C-8KFFT-InstVoc_HQ.ckpt'):
-            torch.hub.download_url_to_file(remote_url_mdxv3, model_folder+'MDX23C-8KFFT-InstVoc_HQ.ckpt')
-        if not os.path.isfile(model_folder+'model_2_stem_full_band_8k.yaml'):
-            torch.hub.download_url_to_file(remote_url_conf_mdxv3, model_folder+'model_2_stem_full_band_8k.yaml')
+        # remote_url_mdxv3 = 'https://github.com/TRvlvr/model_repo/releases/download/all_public_uvr_models/MDX23C-8KFFT-InstVoc_HQ.ckpt'
+        # remote_url_conf_mdxv3 = 'https://raw.githubusercontent.com/TRvlvr/application_data/main/mdx_model_data/mdx_c_configs/model_2_stem_full_band_8k.yaml'
+        # if not os.path.isfile(model_folder+'MDX23C-8KFFT-InstVoc_HQ.ckpt'):
+            # torch.hub.download_url_to_file(remote_url_mdxv3, model_folder+'MDX23C-8KFFT-InstVoc_HQ.ckpt')
+        # if not os.path.isfile(model_folder+'model_2_stem_full_band_8k.yaml'):
+            # torch.hub.download_url_to_file(remote_url_conf_mdxv3, model_folder+'model_2_stem_full_band_8k.yaml')
 
         with open(model_folder + 'model_2_stem_full_band_8k.yaml') as f:
             config_mdxv3 = ConfigDict(yaml.load(f, Loader=yaml.FullLoader))
 
         self.model_mdxv3 = TFC_TDF_net(config_mdxv3)
-        self.model_mdxv3.load_state_dict(torch.load(model_folder+'MDX23C-8KFFT-InstVoc_HQ.ckpt'))
+        self.model_mdxv3.load_state_dict(torch.load(os.path.join(model_folder,'MDX23C-8KFFT-InstVoc_HQ.ckpt'),map_location=torch.device(device)))
         self.device = torch.device(device)
         self.model_mdxv3 = self.model_mdxv3.to(device)
         self.model_mdxv3.eval()
 
         #VitLarge init
         print("Loading VitLarge into memory")
-        remote_url_vitlarge = 'https://github.com/ZFTurbo/Music-Source-Separation-Training/releases/download/v1.0.0/model_vocals_segm_models_sdr_9.77.ckpt'
-        remote_url_vl_conf = 'https://github.com/ZFTurbo/Music-Source-Separation-Training/releases/download/v1.0.0/config_vocals_segm_models.yaml'
-        if not os.path.isfile(model_folder+'model_vocals_segm_models_sdr_9.77.ckpt'):
-            torch.hub.download_url_to_file(remote_url_vitlarge, model_folder+'model_vocals_segm_models_sdr_9.77.ckpt')
-        if not os.path.isfile(model_folder+'config_vocals_segm_models.yaml'):
-            torch.hub.download_url_to_file(remote_url_vl_conf, model_folder+'config_vocals_segm_models.yaml')
+        # remote_url_vitlarge = 'https://github.com/ZFTurbo/Music-Source-Separation-Training/releases/download/v1.0.0/model_vocals_segm_models_sdr_9.77.ckpt'
+        # remote_url_vl_conf = 'https://github.com/ZFTurbo/Music-Source-Separation-Training/releases/download/v1.0.0/config_vocals_segm_models.yaml'
+        # if not os.path.isfile(model_folder+'model_vocals_segm_models_sdr_9.77.ckpt'):
+        #     torch.hub.download_url_to_file(remote_url_vitlarge, model_folder+'model_vocals_segm_models_sdr_9.77.ckpt')
+        # if not os.path.isfile(model_folder+'config_vocals_segm_models.yaml'):
+        #     torch.hub.download_url_to_file(remote_url_vl_conf, model_folder+'config_vocals_segm_models.yaml')
 
         with open(model_folder + 'config_vocals_segm_models.yaml') as f:
             config_vl = ConfigDict(yaml.load(f, Loader=yaml.FullLoader))
 
         self.model_vl = Segm_Models_Net(config_vl)
-        self.model_vl.load_state_dict(torch.load(model_folder+'model_vocals_segm_models_sdr_9.77.ckpt'))
+        self.model_vl.load_state_dict(torch.load(os.path.join(model_folder, 'model_vocals_segm_models_sdr_9.77.ckpt'), map_location=torch.device(device)))
         self.device = torch.device(device)
         self.model_vl = self.model_vl.to(device)
         self.model_vl.eval()
@@ -442,10 +443,10 @@ class EnsembleDemucsMDXMusicSeparationModel:
             print("Loading VOCFT into memory")
             self.chunk_size = chunk_size
             self.mdx_models1 = get_models('tdf_extra', load=False, device=device, vocals_model_type=2)
-            model_path_onnx1 = model_folder + 'UVR-MDX-NET-Voc_FT.onnx'
-            remote_url_onnx1 = 'https://github.com/TRvlvr/model_repo/releases/download/all_public_uvr_models/UVR-MDX-NET-Voc_FT.onnx'
-            if not os.path.isfile(model_path_onnx1):
-                torch.hub.download_url_to_file(remote_url_onnx1, model_path_onnx1)
+            model_path_onnx1 = os.path.join(model_folder, 'UVR-MDX-NET-Voc_FT.onnx')
+            # remote_url_onnx1 = 'https://github.com/TRvlvr/model_repo/releases/download/all_public_uvr_models/UVR-MDX-NET-Voc_FT.onnx'
+            # if not os.path.isfile(model_path_onnx1):
+            #     torch.hub.download_url_to_file(remote_url_onnx1, model_path_onnx1)
             # print('Model path: {}'.format(model_path_onnx1))
             # print('Device: {} Chunk size: {}'.format(device, chunk_size))
             self.infer_session1 = ort.InferenceSession(
