@@ -36,10 +36,10 @@ def main():
     input_data = inference.input_fn(audio_data, 'application/octet-stream')
 
     # Make a prediction
-    prediction, sample_rates = inference.predict_fn(input_data, model)
+    prediction, sample_rates, instruments = inference.predict_fn(input_data, model)
 
     # Format the output data
-    output_data = inference.output_fn((prediction, sample_rates), 'application/json')
+    output_data = inference.output_fn((prediction, sample_rates, instruments), 'application/json')
 
     # Print the output data
     print(output_data)
