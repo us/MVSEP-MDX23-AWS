@@ -1,3 +1,5 @@
+import base64
+import json
 import inference  # Import your inference script here
 
 
@@ -29,10 +31,16 @@ def main():
     # Simulate incoming audio data (replace 'sample_audio.mp3' with your audio file)
     with open('../sample_audio.mp3', 'rb') as audio_file:
         audio_data = audio_file.read()
-    input_json = {
-        "audio": audio_data,
-        "options": {"cpu":cpu_test}
-    }
+    
+    
+    # Base64-encode the binary audio data
+    encoded_audio_data = base64.b64encode(audio_data).decode('utf-8')
+
+    input_json = json.dumps({
+        "audio": encoded_audio_data,
+        "options": {"cpu": cpu_test}  # Assuming cpu_test is a variable or replace with actual value
+    })
+
     # Prepare the input data
     input_data = inference.input_fn(input_json, 'application/json')
 
