@@ -15,7 +15,6 @@ logger.setLevel(logging.DEBUG)  # Set to DEBUG for development, INFO for product
 
 # Default options for model prediction
 default_options = {
-    # "cpu": False,
     "overlap_demucs": 0.1,
     "overlap_VOCFT": 0.1,
     "overlap_VitLarge": 1,
@@ -23,7 +22,6 @@ default_options = {
     "weight_InstVoc": 8,
     "weight_VOCFT": 1,
     "weight_VitLarge": 5,
-    "single_onnx": False,
     "large_gpu": True,
     "BigShifts": 7,
     "vocals_only": False,
@@ -60,17 +58,11 @@ def input_fn(request_body, request_content_type):
         if len(audio.shape) == 1:
             audio = np.stack([audio, audio], axis=0)
         
-        # Extract additional parameters from the JSON payload
-        # additional_params = {key: value for key, value in input_data.items() if key != 'audio'}
-        global default_options
-        default_options.update(input_data['options'])
         # Combine audio data and additional parameters in the returned dictionary
         return {
             'audio': audio, 
             'sr': sample_rate,
-            'index': 0,
-            'total': 1,
-            # **additional_params  # Merge additional parameters into the return dictionary
+            'options': input_data.get('options')
         }
     except Exception as e:
         logger.error(f"Error processing input data: {e}")
@@ -81,7 +73,7 @@ def predict_fn(input_data, model):
     """Run prediction on preprocessed audio data."""
     logger.info('Performing separation on audio data')
     audio, sample_rate = input_data['audio'], input_data['sr']
-    result, sample_rates, instruments = model.separate_music_file(audio.T, sample_rate, input_data['index'], input_data['total'])
+    result, sample_rates, instruments = model.separate_music_file(audio.T, sample_rate, input_data['options'])
     
     return result, sample_rates, instruments
 

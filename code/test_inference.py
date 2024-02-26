@@ -9,7 +9,6 @@ def main():
     cpu_test = False
     if cpu_test:
         inference.default_options = {
-        "cpu": True,
         "overlap_demucs": 0.1,
         "overlap_VOCFT": 0.1,
         "overlap_VitLarge": 1,
@@ -17,7 +16,6 @@ def main():
         "weight_InstVoc": 8,
         "weight_VOCFT": 1,
         "weight_VitLarge": 5,
-        "single_onnx": False,
         "large_gpu": False,
         "BigShifts": 7,
         "vocals_only": False,
@@ -38,7 +36,20 @@ def main():
 
     input_json = json.dumps({
         "audio": encoded_audio_data,
-        "options": {"cpu": cpu_test}  # Assuming cpu_test is a variable or replace with actual value
+        "options": {
+            "overlap_demucs": 0.1,
+            "overlap_VOCFT": 0.1,
+            "overlap_VitLarge": 1,
+            "overlap_InstVoc": 1,
+            "weight_InstVoc": 8,
+            "weight_VOCFT": 1,
+            "weight_VitLarge": 5,
+            "large_gpu": True,
+            "BigShifts": 7,
+            "vocals_only": False,
+            "use_VOCFT": False,
+            "output_format": "FLOAT",
+        }
     })
 
     # Prepare the input data
