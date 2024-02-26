@@ -15,7 +15,7 @@ logger.setLevel(logging.DEBUG)  # Set to DEBUG for development, INFO for product
 
 # Default options for model prediction
 default_options = {
-    "cpu": False,
+    # "cpu": False,
     "overlap_demucs": 0.1,
     "overlap_VOCFT": 0.1,
     "overlap_VitLarge": 1,
@@ -59,8 +59,8 @@ def input_fn(request_body, request_content_type):
 def predict_fn(input_data, model):
     """Run prediction on preprocessed audio data."""
     logger.info('Performing separation on audio data')
-    waveform, sample_rate = input_data['audio'], input_data['sr']
-    result, sample_rates = model.separate_music_file(waveform.T, sample_rate, input_data['index'], input_data['total'])
+    audio, sample_rate = input_data['audio'], input_data['sr']
+    result, sample_rates = model.separate_music_file(audio.T, sample_rate, input_data['index'], input_data['total'])
     return result, sample_rates
 
 def output_fn(prediction, content_type):
