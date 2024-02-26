@@ -3,10 +3,9 @@ import logging
 import librosa
 import numpy as np
 from main import EnsembleDemucsMDXMusicSeparationModel
-import torchaudio
-import torch
+
 import io
-import base64
+import soundfile as sf
 
 # Initialize logging
 logger = logging.getLogger(__name__)
@@ -59,41 +58,47 @@ def predict_fn(input_data, model):
     """Run prediction on preprocessed audio data."""
     logger.info('Performing separation on audio data')
     audio, sample_rate = input_data['audio'], input_data['sr']
-    result, sample_rates = model.separate_music_file(audio.T, sample_rate, input_data['index'], input_data['total'])
-    return result, sample_rates
+    result, sample_rates, instruments = model.separate_music_file(audio.T, sample_rate, input_data['index'], input_data['total'])
+    
+    return result, sample_rates, instruments
 
-def output_fn(prediction, content_type):
-    """Postprocess and format the prediction output."""
-    logger.info('Formatting output data')
-    result, sample_rates = prediction
-    output_responses = []
 
-    for instrum, audio_data in result.items():
-        audio_tensor = audio_data if isinstance(audio_data, torch.Tensor) else torch.tensor(audio_data, dtype=torch.float32)
-        audio_tensor = audio_tensor.to('cpu')  # Ensure data is on CPU for serialization
-
+def output_fn(prediction, accept='application/octet-stream'):
+    """
+    Process the prediction output to audio buffers and store them in a dictionary.
+    """
+    result, sample_rates, instruments = prediction
+    audio_buffers = {}
+    
+    for instrum in instruments:
+        output_name = '_{}.wav'.format(instrum)
         buffer = io.BytesIO()
-        # Specify the format explicitly, assuming WAV format
-        torchaudio.save(buffer, audio_tensor.unsqueeze(0), sample_rate=sample_rates[instrum], format="wav")
+        sf.write(buffer, result[instrum], sample_rates[instrum], format='WAV', subtype=default_options.output_format)
         buffer.seek(0)
-        encoded_audio = base64.b64encode(buffer.read()).decode('utf-8')  # Encode for transmission
+        audio_buffers[output_name] = buffer
 
-        output_responses.append({'instrument': instrum, 'audio_data': encoded_audio})
-        logger.info(f'Output processed for instrument: {instrum}')
+    # Instrumental part 1
+    if 'instrum' in result:
+        inst = result['instrum']
+        output_name = '_instrum.wav'
+        buffer = io.BytesIO()
+        sf.write(buffer, inst, sample_rates.get('instrum', 44100), format='WAV', subtype=default_options.output_format)
+        buffer.seek(0)
+        audio_buffers[output_name] = buffer
 
-    return output_responses
-"""
-Processing vocals: DONE!
-Starting Demucs processing...
-Processing with htdemucs_ft...
-Traceback (most recent call last):
-  File "/home/ec2-user/SageMaker/MVSEP-MDX23-AWS/code/test_inference.py", line 48, in <module>
-    main()
-  File "/home/ec2-user/SageMaker/MVSEP-MDX23-AWS/code/test_inference.py", line 39, in main
-    prediction, sample_rates = inference.predict_fn(input_data, model)
-  File "/home/ec2-user/SageMaker/MVSEP-MDX23-AWS/code/inference.py", line 62, in predict_fn
-    result, sample_rates = model.separate_music_file(audio.T, sample_rate, input_data['index'], input_data['total'])
-  File "/home/ec2-user/SageMaker/MVSEP-MDX23-AWS/code/main.py", line 598, in separate_music_file
-    print('Processing with htdemucs...', repo=pathlib.Path('..'))
-TypeError: 'repo' is an invalid keyword argument for print()
-"""
+    # Instrumental part 2, if vocals_only option is False
+    if not default_options['vocals_only'] and all(x in result for x in ['bass', 'drums', 'other']):
+        inst2 = result['bass'] + result['drums'] + result['other']
+        output_name = '_instrum2.wav'
+        buffer = io.BytesIO()
+        sf.write(buffer, inst2, sample_rates.get('bass', 44100), format='WAV', subtype=default_options.output_format)  # Assuming same SR for all
+        buffer.seek(0)
+        audio_buffers[output_name] = buffer
+
+    if accept == 'application/octet-stream':
+        # This example simply returns the dictionary of buffers
+        # Adapt this as needed for your use case, e.g., packaging multiple files, handling accept types
+        return audio_buffers
+    else:
+        raise ValueError(f"Unsupported accept header: {accept}")
+

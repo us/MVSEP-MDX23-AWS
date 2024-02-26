@@ -683,7 +683,7 @@ class EnsembleDemucsMDXMusicSeparationModel:
         # instrum
         separated_music_arrays['instrum'] = instrum
 
-        return separated_music_arrays, output_sample_rates
+        return separated_music_arrays, output_sample_rates, self.instruments
 
 
 # Linkwitz-Riley filter
