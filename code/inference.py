@@ -1,5 +1,8 @@
 import logging
 import os
+
+import librosa
+import numpy as np
 from main import EnsembleDemucsMDXMusicSeparationModel
 import torchaudio
 import torch
@@ -42,10 +45,13 @@ def input_fn(request_body, request_content_type):
     
     try:
         audio_buffer = io.BytesIO(request_body)
-        waveform, sample_rate = torchaudio.load(audio_buffer)
-        if waveform.size(0) == 1:
-            waveform = waveform.repeat(2, 1)  # Ensure stereo audio
-        return {'audio': waveform, 'sr': sample_rate, 'index': 0, 'total': 1}
+        audio, sample_rate = librosa.load(audio_buffer, mono=False, sr=44100)
+        if len(audio.shape) == 1:
+            audio = np.stack([audio, audio], axis=0)
+        # # waveform, sample_rate = torchaudio.load(audio_buffer)
+        # if waveform.size(0) == 1:
+        #     waveform = waveform.repeat(2, 1)  # Ensure stereo audio
+        return {'audio': audio, 'sr': sample_rate, 'index': 0, 'total': 1}
     except Exception as e:
         logger.error(f"Error processing audio with torchaudio: {e}")
         raise

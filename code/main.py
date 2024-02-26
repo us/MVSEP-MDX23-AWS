@@ -416,8 +416,8 @@ class EnsembleDemucsMDXMusicSeparationModel:
 
         self.model_mdxv3 = TFC_TDF_net(config_mdxv3)
         self.model_mdxv3.load_state_dict(torch.load(os.path.join(model_folder,'MDX23C-8KFFT-InstVoc_HQ.ckpt'),map_location=torch.device(device)))
-        self.device = torch.device(device)
-        self.model_mdxv3 = self.model_mdxv3.to(device)
+        # self.device = torch.device(device)
+        # self.model_mdxv3 = self.model_mdxv3.to(device)
         self.model_mdxv3.eval()
 
         #VitLarge init
@@ -434,8 +434,8 @@ class EnsembleDemucsMDXMusicSeparationModel:
 
         self.model_vl = Segm_Models_Net(config_vl)
         self.model_vl.load_state_dict(torch.load(os.path.join(model_folder, 'model_vocals_segm_models_sdr_9.77.ckpt'), map_location=torch.device(device)))
-        self.device = torch.device(device)
-        self.model_vl = self.model_vl.to(device)
+        # self.device = torch.device(device)
+        # self.model_vl = self.model_vl.to(device)
         self.model_vl.eval()
 
         # VOCFT init
@@ -494,8 +494,8 @@ class EnsembleDemucsMDXMusicSeparationModel:
         output_sample_rates = {}
         #print(mixed_sound_array.T.shape)
         #audio = np.expand_dims(mixed_sound_array.T, axis=0)
-        # audio = torch.from_numpy(mixed_sound_array.T).type('torch.FloatTensor').to(self.device)
-        audio = mixed_sound_array
+        audio = torch.from_numpy(mixed_sound_array.T).type('torch.FloatTensor').to(self.device)
+        # audio = mixed_sound_array
 
         overlap_demucs = self.overlap_demucs
         overlap_MDX = self.overlap_MDX
