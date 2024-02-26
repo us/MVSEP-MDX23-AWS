@@ -82,3 +82,18 @@ def output_fn(prediction, content_type):
         logger.info(f'Output processed for instrument: {instrum}')
 
     return output_responses
+"""
+Processing vocals: DONE!
+Starting Demucs processing...
+Processing with htdemucs_ft...
+Traceback (most recent call last):
+  File "/home/ec2-user/SageMaker/MVSEP-MDX23-AWS/code/test_inference.py", line 48, in <module>
+    main()
+  File "/home/ec2-user/SageMaker/MVSEP-MDX23-AWS/code/test_inference.py", line 39, in main
+    prediction, sample_rates = inference.predict_fn(input_data, model)
+  File "/home/ec2-user/SageMaker/MVSEP-MDX23-AWS/code/inference.py", line 62, in predict_fn
+    result, sample_rates = model.separate_music_file(audio.T, sample_rate, input_data['index'], input_data['total'])
+  File "/home/ec2-user/SageMaker/MVSEP-MDX23-AWS/code/main.py", line 598, in separate_music_file
+    print('Processing with htdemucs...', repo=pathlib.Path('..'))
+TypeError: 'repo' is an invalid keyword argument for print()
+"""

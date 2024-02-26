@@ -595,9 +595,9 @@ class EnsembleDemucsMDXMusicSeparationModel:
             del model
             gc.collect()
             i = 1
-            print('Processing with htdemucs...', repo=pathlib.Path('..'))
+            print('Processing with htdemucs...')
             overlap = overlap_demucs
-            model = pretrained.get_model('htdemucs')
+            model = pretrained.get_model('htdemucs', repo=pathlib.Path('..'))
             model.to(self.device)
             out = 0.5 * apply_model(model, audio, shifts=shifts, overlap=overlap)[0].cpu().numpy() \
                   + 0.5 * -apply_model(model, -audio, shifts=shifts, overlap=overlap)[0].cpu().numpy()
