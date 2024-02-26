@@ -39,9 +39,9 @@ echo "Downloading $TARGET_FILE_NAME3 to $OUTPUT_DIR..."
 wget $MODEL_URL3 -O "$OUTPUT_DIR/$TARGET_FILE_NAME3"
 echo "Downloaded $TARGET_FILE_NAME3"
 
-!wget "https://raw.githubusercontent.com/TRvlvr/application_data/main/mdx_model_data/mdx_c_configs/model_2_stem_full_band_8k.yaml"
+wget "https://raw.githubusercontent.com/TRvlvr/application_data/main/mdx_model_data/mdx_c_configs/model_2_stem_full_band_8k.yaml"
 
-!wget "https://github.com/ZFTurbo/Music-Source-Separation-Training/releases/download/v1.0.0/config_vocals_segm_models.yaml"
+wget "https://github.com/ZFTurbo/Music-Source-Separation-Training/releases/download/v1.0.0/config_vocals_segm_models.yaml"
 
 echo "All models downloaded successfully to $OUTPUT_DIR."
 

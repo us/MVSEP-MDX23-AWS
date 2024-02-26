@@ -68,17 +68,18 @@ def output_fn(prediction, content_type):
     logger.info('Formatting output data')
     result, sample_rates = prediction
     output_responses = []
-    
+
     for instrum, audio_data in result.items():
         audio_tensor = audio_data if isinstance(audio_data, torch.Tensor) else torch.tensor(audio_data, dtype=torch.float32)
         audio_tensor = audio_tensor.to('cpu')  # Ensure data is on CPU for serialization
-        
+
         buffer = io.BytesIO()
-        torchaudio.save(buffer, audio_tensor, sample_rates[instrum])
+        # Specify the format explicitly, assuming WAV format
+        torchaudio.save(buffer, audio_tensor.unsqueeze(0), sample_rate=sample_rates[instrum], format="wav")
         buffer.seek(0)
         encoded_audio = base64.b64encode(buffer.read()).decode('utf-8')  # Encode for transmission
-        
+
         output_responses.append({'instrument': instrum, 'audio_data': encoded_audio})
         logger.info(f'Output processed for instrument: {instrum}')
-    
+
     return output_responses
