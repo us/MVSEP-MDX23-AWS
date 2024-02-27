@@ -374,7 +374,7 @@ class EnsembleDemucsMDXMusicSeparationModel:
 
         #VitLarge init
         print("Loading VitLarge into memory")
-        with open(model_folder + 'config_vocals_segm_models.yaml') as f:
+        with open(os.path.join(model_folder, 'config_vocals_segm_models.yaml')) as f:
             config_vl = ConfigDict(yaml.load(f, Loader=yaml.FullLoader))
 
         self.model_vl = Segm_Models_Net(config_vl)
