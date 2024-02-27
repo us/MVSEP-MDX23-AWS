@@ -32,7 +32,7 @@ default_options = {
 def model_fn(model_dir):
     """Load the ensemble model for music separation."""
     logger.info(f"Loading model from directory: {model_dir}")
-    model = EnsembleDemucsMDXMusicSeparationModel(model_dir=model_dir, options=default_options)
+    model = EnsembleDemucsMDXMusicSeparationModel(model_dir=model_dir)
     return model
 
 
