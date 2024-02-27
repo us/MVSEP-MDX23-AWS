@@ -396,13 +396,13 @@ class EnsembleDemucsMDXMusicSeparationModel:
         self.device = device
         pass
         
-    @property
-    def instruments(self, options):
+    # @property
+    # def instruments(self, options):
 
-        if options['vocals_only'] is False:
-            return ['bass', 'drums', 'other', 'vocals']
-        else:
-            return ['vocals']
+    #     if options['vocals_only'] is False:
+    #         return ['bass', 'drums', 'other', 'vocals']
+    #     else:
+    #         return ['vocals']
 
     def raise_aicrowd_error(self, msg):
         """ Will be used by the evaluator to provide logs, DO NOT CHANGE """
@@ -597,8 +597,12 @@ class EnsembleDemucsMDXMusicSeparationModel:
         
         # instrum
         separated_music_arrays['instrum'] = instrum
+        if options['vocals_only'] is False:
+            instruments = ['bass', 'drums', 'other', 'vocals']
+        else:
+            instruments = ['vocals']
 
-        return separated_music_arrays, output_sample_rates, self.instruments(options)
+        return separated_music_arrays, output_sample_rates, instruments
 
 
 # Linkwitz-Riley filter
