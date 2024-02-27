@@ -13,21 +13,21 @@ import soundfile as sf
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)  # Set to DEBUG for development, INFO for production
 
-# Default options for model prediction
-default_options = {
-    "overlap_demucs": 0.1,
-    "overlap_VOCFT": 0.1,
-    "overlap_VitLarge": 1,
-    "overlap_InstVoc": 1,
-    "weight_InstVoc": 8,
-    "weight_VOCFT": 1,
-    "weight_VitLarge": 5,
-    "large_gpu": True,
-    "BigShifts": 7,
-    "vocals_only": False,
-    "use_VOCFT": False,
-    "output_format": "FLOAT",
-}
+# # Default options for model prediction
+# default_options = {
+#     "overlap_demucs": 0.1,
+#     "overlap_VOCFT": 0.1,
+#     "overlap_VitLarge": 1,
+#     "overlap_InstVoc": 1,
+#     "weight_InstVoc": 8,
+#     "weight_VOCFT": 1,
+#     "weight_VitLarge": 5,
+#     "large_gpu": True,
+#     "BigShifts": 7,
+#     "vocals_only": False,
+#     "use_VOCFT": False,
+#     "output_format": "FLOAT",
+# }
 
 def model_fn(model_dir):
     """Load the ensemble model for music separation."""
@@ -72,17 +72,17 @@ def input_fn(request_body, request_content_type):
 def predict_fn(input_data, model):
     """Run prediction on preprocessed audio data."""
     logger.info('Performing separation on audio data')
-    audio, sample_rate = input_data['audio'], input_data['sr']
-    result, sample_rates, instruments = model.separate_music_file(audio.T, sample_rate, input_data['options'])
+    audio, sample_rate, options = input_data['audio'], input_data['sr'], input_data['options']
+    result, sample_rates, instruments = model.separate_music_file(audio.T, sample_rate, options)
     
-    return result, sample_rates, instruments
+    return result, sample_rates, instruments, options
 
 
 def output_fn(prediction, accept='application/octet-stream'):
     """
     Process the prediction output to audio buffers and store them in a dictionary.
     """
-    result, sample_rates, instruments = prediction
+    result, sample_rates, instruments, options = prediction
     audio_buffers = {}
     
     for instrum in instruments:
@@ -102,7 +102,7 @@ def output_fn(prediction, accept='application/octet-stream'):
         audio_buffers[output_name] = buffer
 
     # Instrumental part 2, if vocals_only option is False
-    if not default_options['vocals_only'] and all(x in result for x in ['bass', 'drums', 'other']):
+    if not options['vocals_only'] and all(x in result for x in ['bass', 'drums', 'other']):
         inst2 = result['bass'] + result['drums'] + result['other']
         output_name = '_instrum2.wav'
         buffer = io.BytesIO()
