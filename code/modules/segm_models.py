@@ -88,14 +88,14 @@ class Segm_Models_Net(nn.Module):
         if config.model.decoder_type == 'unet':
             self.unet_model = smp.Unet(
                 encoder_name=config.model.encoder_name,
-                encoder_weights="imagenet",
+                encoder_weights=None,
                 in_channels=c,
                 classes=c,
             )
         elif config.model.decoder_type == 'fpn':
             self.unet_model = smp.FPN(
                 encoder_name=config.model.encoder_name,
-                encoder_weights="imagenet",
+                encoder_weights=None,
                 in_channels=c,
                 classes=c,
             )
