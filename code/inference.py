@@ -48,7 +48,7 @@ def input_fn(request_body, request_content_type):
     
     try:
         # Parse the JSON body to extract audio data and parameters
-        input_data = json.loads(io.BytesIO(request_body))
+        input_data = json.loads(request_body)
         logger.info('Parsed input data successfully.', input_data)
         
         # Additional debugging to ensure input_data is as expected
