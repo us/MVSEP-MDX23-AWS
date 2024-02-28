@@ -53,7 +53,7 @@ def input_fn(request_body, request_content_type):
         
         # Additional debugging to ensure input_data is as expected
         if not isinstance(input_data, dict):
-            logger.error('Parsed input data is not a dictionary. Actual type: %s', type(input_data, "\n", input_data))
+            logger.error('Parsed input data is not a dictionary. Actual type: %s', type(input_data))
             raise ValueError('Parsed input data is not a dictionary.')
         
         # Decode the base64-encoded audio data
