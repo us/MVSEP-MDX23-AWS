@@ -19,7 +19,7 @@ logger.setLevel(logging.DEBUG)  # Set to DEBUG for development, INFO for product
 #     "overlap_VOCFT": 0.1,
 #     "overlap_VitLarge": 1,
 #     "overlap_InstVoc": 1,
-#     "weight_InstVoc": 8,
+#     "weight_InstVoc": 8g,
 #     "weight_VOCFT": 1,
 #     "weight_VitLarge": 5,
 #     "large_gpu": True,
@@ -38,15 +38,23 @@ def model_fn(model_dir):
 
 def input_fn(request_body, request_content_type):
     """Preprocess incoming audio data and additional parameters before prediction."""
-    logger.info('Processing input data')
+    logger.info('Received request_body: %s', request_body[:100])  # Print first 100 chars for debugging
+    logger.info('Received request_content_type: %s', request_content_type)
     
     # Ensure the correct content type is being used
     if request_content_type != 'application/json':
+        logger.error('Unsupported content type: %s', request_content_type)
         raise ValueError(f'Unsupported content type: {request_content_type}')
     
     try:
         # Parse the JSON body to extract audio data and parameters
         input_data = json.loads(request_body)
+        logger.info('Parsed input data successfully.', input_data)
+        
+        # Additional debugging to ensure input_data is as expected
+        if not isinstance(input_data, dict):
+            logger.error('Parsed input data is not a dictionary. Actual type: %s', type(input_data, "\n", input_data))
+            raise ValueError('Parsed input data is not a dictionary.')
         
         # Decode the base64-encoded audio data
         audio_data_base64 = input_data['audio']
@@ -62,7 +70,20 @@ def input_fn(request_body, request_content_type):
         return {
             'audio': audio, 
             'sr': sample_rate,
-            'options': input_data.get('options')
+            'options': input_data.get('options', {
+                                        "overlap_demucs": 0.1,
+                                        "overlap_VOCFT": 0.1,
+                                        "overlap_VitLarge": 1,
+                                        "overlap_InstVoc": 1,
+                                        "weight_InstVoc": 8,
+                                        "weight_VOCFT": 1,
+                                        "weight_VitLarge": 5,
+                                        "large_gpu": True,
+                                        "BigShifts": 7,
+                                        "vocals_only": False,
+                                        "use_VOCFT": False,
+                                        "output_format": "FLOAT",
+                                    })
         }
     except Exception as e:
         logger.error(f"Error processing input data: {e},\nrequest_body: {request_body}, request_content_type: {request_content_type}\n input_data: {input_data}")
