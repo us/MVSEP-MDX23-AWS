@@ -59,10 +59,10 @@ def input_fn(request_body, request_content_type):
         # Decode the base64-encoded audio data
         audio_data_base64 = input_data['audio']
         audio_data = base64.b64decode(audio_data_base64)
-        audio_buffer = io.BytesIO(audio_data)
+        # audio_buffer = io.BytesIO(audio_data)
         
         # Load the audio with librosa
-        audio, sample_rate = librosa.load(audio_buffer, mono=False, sr=44100)
+        audio, sample_rate = librosa.load(audio_data, mono=False, sr=44100)
         if len(audio.shape) == 1:
             audio = np.stack([audio, audio], axis=0)
         
