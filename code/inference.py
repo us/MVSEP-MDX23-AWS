@@ -86,7 +86,7 @@ def input_fn(request_body, request_content_type):
                                     })
         }
     except Exception as e:
-        logger.error(f"Error processing input data: {e},\nrequest_body: {request_body}, request_content_type: {request_content_type}\n input_data: {input_data}")
+        logger.error(f"Error processing input data: {e},\nrequest_body: {request_body}, request_content_type: {request_content_type}\n")
         raise
 
 
