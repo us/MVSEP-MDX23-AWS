@@ -51,7 +51,7 @@ def input_fn(request_body, request_content_type):
     try:
         # Parse the JSON body to extract audio data and parameters
         input_data = json.loads(request_body)
-        logger.info('Parsed input data successfully.', input_data)
+        logger.info('Parsed input data successfully.')
         
         # Additional debugging to ensure input_data is as expected
         if not isinstance(input_data, dict):
@@ -61,16 +61,15 @@ def input_fn(request_body, request_content_type):
         audio_data_base64 = input_data['audio']
         audio_data = base64.b64decode(audio_data_base64)
         
-        # Use a temporary file to accommodate librosa's requirements
-        with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
-            tmp_file.write(audio_data)
-            tmp_file_name = tmp_file.name
-        
-        # Load the audio with librosa
-        audio, sample_rate = librosa.load(tmp_file_name, mono=False, sr=44100)
-        os.remove(tmp_file_name)  # Clean up the temporary file
+        # Load the audio with soundfile from bytes
+        with io.BytesIO(audio_data) as audio_file:
+            audio, sample_rate = sf.read(audio_file, dtype='float32', always_2d=True)
+            # Transpose the audio to shape (channels, samples) to make it compatible with librosa's format if needed
+            audio = audio.T
 
-        if len(audio.shape) == 1:
+        # Ensure audio is in a compatible shape for further processing, especially if it's mono
+        if audio.shape[0] == 1:
+            # If mono, duplicate the channel to make it stereo
             audio = np.stack([audio, audio], axis=0)
         
         # Combine audio data and additional parameters in the returned dictionary
