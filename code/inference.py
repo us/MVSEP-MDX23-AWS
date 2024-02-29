@@ -1,6 +1,8 @@
 import base64
 import json
 import logging
+import os
+import tempfile
 
 import librosa
 import numpy as np
@@ -56,13 +58,18 @@ def input_fn(request_body, request_content_type):
             logger.error('Parsed input data is not a dictionary. Actual type: %s', type(input_data))
             raise ValueError('Parsed input data is not a dictionary.')
         
-        # Decode the base64-encoded audio data
         audio_data_base64 = input_data['audio']
         audio_data = base64.b64decode(audio_data_base64)
-        # audio_buffer = io.BytesIO(audio_data)
+        
+        # Use a temporary file to accommodate librosa's requirements
+        with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
+            tmp_file.write(audio_data)
+            tmp_file_name = tmp_file.name
         
         # Load the audio with librosa
-        audio, sample_rate = librosa.load(audio_data, mono=False, sr=44100)
+        audio, sample_rate = librosa.load(tmp_file_name, mono=False, sr=44100)
+        os.remove(tmp_file_name)  # Clean up the temporary file
+
         if len(audio.shape) == 1:
             audio = np.stack([audio, audio], axis=0)
         
