@@ -63,7 +63,7 @@ def input_fn(request_body, request_content_type):
         with io.BytesIO(audio_data) as audio_file:
             audio, sample_rate = sf.read(audio_file, dtype='float32', always_2d=True)
             # Transpose the audio to shape (channels, samples) to make it compatible with librosa's format if needed
-            audio = audio.T
+            # audio = audio.T
 
         # Ensure audio is in a compatible shape for further processing, especially if it's mono
         if audio.shape[0] == 1:
