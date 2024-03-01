@@ -335,25 +335,12 @@ class EnsembleDemucsMDXMusicSeparationModel:
         self.weights_drums = np.array([18, 2, 4, 9])
         self.weights_other = np.array([14, 2, 5, 10])
 
-        model1 = pretrained.get_model('htdemucs_ft', repo=pathlib.Path(model_dir))
-        model1.to(device)
-        self.models['htdemucs_ft'] = model1
+        model_names = ['htdemucs_ft', 'htdemucs', 'htdemucs_6s', 'hdemucs_mmi']
 
-        model2 = pretrained.get_model('htdemucs', repo=pathlib.Path(model_dir))
-        model2.to(device)
-        self.models['htdemucs'] = model2
+        for name in model_names:
+            self.models[name] = pretrained.get_model(name, repo=pathlib.Path(model_dir))
 
-        model3 = pretrained.get_model('htdemucs_6s', repo=pathlib.Path(model_dir))
-        model3.to(device)
-        self.models['htdemucs_6s'] = model3
 
-        model4 = pretrained.get_model('hdemucs_mmi', repo=pathlib.Path(model_dir))
-        model4.to(device)
-        self.models['hdemucs_mmi'] = model4
-
-        if 0:
-            for model in self.models:
-                pass
         '''
         ['drums', 'bass', 'other', 'vocals']
         ['drums', 'bass', 'other', 'vocals']
@@ -501,6 +488,7 @@ class EnsembleDemucsMDXMusicSeparationModel:
             i = 0
             overlap = overlap_demucs
             model = self.models['htdemucs_ft']
+            model.to(self.device)
             out = 0.5 * apply_model(model, audio, shifts=shifts, overlap=overlap)[0].cpu().numpy() \
                   + 0.5 * -apply_model(model, -audio, shifts=shifts, overlap=overlap)[0].cpu().numpy()
        
@@ -511,11 +499,13 @@ class EnsembleDemucsMDXMusicSeparationModel:
             all_outs.append(out)
             model = model.cpu()
             del model
+            torch.cuda.empty_cache()
             gc.collect()
             i = 1
             print('Processing with htdemucs...')
             overlap = overlap_demucs
             model = self.models['htdemucs']
+            model.to(self.device)
             out = 0.5 * apply_model(model, audio, shifts=shifts, overlap=overlap)[0].cpu().numpy() \
                   + 0.5 * -apply_model(model, -audio, shifts=shifts, overlap=overlap)[0].cpu().numpy()
     
@@ -526,11 +516,13 @@ class EnsembleDemucsMDXMusicSeparationModel:
             all_outs.append(out)
             model = model.cpu()
             del model
+            torch.cuda.empty_cache()
             gc.collect()
             i = 2
             print('Processing with htdemucs_6s...')
             overlap = overlap_demucs
-            model = self.models['htdemucs_6s']            
+            model = self.models['htdemucs_6s']
+            model.to(self.device)           
             out = apply_model(model, audio, shifts=shifts, overlap=overlap)[0].cpu().numpy()
        
             # More stems need to add
@@ -543,10 +535,12 @@ class EnsembleDemucsMDXMusicSeparationModel:
             all_outs.append(out)
             model = model.cpu()
             del model
+            torch.cuda.empty_cache()
             gc.collect()
             i = 3
             print('Processing with htdemucs_mmi...')
             model = self.models['hdemucs_mmi']
+            model.to(self.device)
             out = 0.5 * apply_model(model, audio, shifts=shifts, overlap=overlap)[0].cpu().numpy() \
                   + 0.5 * -apply_model(model, -audio, shifts=shifts, overlap=overlap)[0].cpu().numpy()
        
@@ -557,6 +551,7 @@ class EnsembleDemucsMDXMusicSeparationModel:
             all_outs.append(out)
             model = model.cpu()
             del model
+            torch.cuda.empty_cache()
             gc.collect()
             out = np.array(all_outs).sum(axis=0)
             out[0] = out[0] / self.weights_drums.sum()
