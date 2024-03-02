@@ -2,6 +2,7 @@ import base64
 import json
 import logging
 import os
+import librosa
 
 import numpy as np
 from main import EnsembleDemucsMDXMusicSeparationModel
@@ -63,8 +64,10 @@ def input_fn(request_body, request_content_type):
         with io.BytesIO(audio_data) as audio_file:
             audio, sample_rate = sf.read(audio_file, dtype='float32', always_2d=True)
             # Transpose the audio to shape (channels, samples) to make it compatible with librosa's format if needed
-            # audio = audio.T
-
+            audio = audio.T
+            # if sample_rate != 44100:
+            #     audio = librosa.resample(audio, sample_rate, 44100)
+            #     sample_rate = 44100
         # Ensure audio is in a compatible shape for further processing, especially if it's mono
         if audio.shape[0] == 1:
             # If mono, duplicate the channel to make it stereo

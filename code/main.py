@@ -323,9 +323,18 @@ class EnsembleDemucsMDXMusicSeparationModel:
 
         """
         if torch.cuda.is_available():
-            device = 'cuda:0'
+            self.device = 'cuda:0'
         else:
-            device = 'cpu'
+            self.device = 'cpu'
+
+        if self.device == 'cpu':
+            chunk_size = 200000000
+            providers = ["CPUExecutionProvider"]
+        else:
+            chunk_size = 1000000
+            providers = ["CUDAExecutionProvider"]
+
+        self.chunk_size = chunk_size
 
         model_folder = model_dir
 
@@ -355,8 +364,8 @@ class EnsembleDemucsMDXMusicSeparationModel:
 
         self.model_mdxv3 = TFC_TDF_net(config_mdxv3)
         self.model_mdxv3.load_state_dict(torch.load(os.path.join(model_folder,'MDX23C-8KFFT-InstVoc_HQ.ckpt')))
-        self.device = torch.device(device)
-        self.model_mdxv3 = self.model_mdxv3.to(device)
+        # self.device = torch.device(device)
+        self.model_mdxv3 = self.model_mdxv3.to(self.device)
         self.model_mdxv3.eval()
 
         #VitLarge init
@@ -366,22 +375,14 @@ class EnsembleDemucsMDXMusicSeparationModel:
 
         self.model_vl = Segm_Models_Net(config_vl)
         self.model_vl.load_state_dict(torch.load(os.path.join(model_folder, 'model_vocals_segm_models_sdr_9.77.ckpt')))
-        self.device = torch.device(device)
-        self.model_vl = self.model_vl.to(device)
+        # self.device = torch.device(device)
+        self.model_vl = self.model_vl.to(self.device)
         self.model_vl.eval()
 
-        if device == 'cpu':
-            chunk_size = 200000000
-            providers = ["CPUExecutionProvider"]
-        else:
-            chunk_size = 1000000
-            providers = ["CUDAExecutionProvider"]
-
-        self.chunk_size = chunk_size
 
         # VOCFT init
         print("Loading VOCFT into memory")
-        self.mdx_models1 = get_models('tdf_extra', load=False, device=device, vocals_model_type=2)
+        self.mdx_models1 = get_models('tdf_extra', load=False, device=self.device, vocals_model_type=2)
         model_path_onnx1 = os.path.join(model_folder, 'UVR-MDX-NET-Voc_FT.onnx')
         self.infer_session1 = ort.InferenceSession(
             model_path_onnx1,
@@ -389,7 +390,7 @@ class EnsembleDemucsMDXMusicSeparationModel:
             provider_options=[{"device_id": 0}],
         )
 
-        self.device = device
+        # self.device = device
         pass
         
     # @property
