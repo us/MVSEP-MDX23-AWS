@@ -1,34 +1,16 @@
-import base64
 import json
 import logging
 import os
+import tempfile
+import boto3
 import librosa
-
+import soundfile as sf
 import numpy as np
 from main import EnsembleDemucsMDXMusicSeparationModel
-
-import io
-import soundfile as sf
 
 # Initialize logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)  # Set to DEBUG for development, INFO for production
-
-# # Default options for model prediction
-# default_options = {
-#     "overlap_demucs": 0.1,
-#     "overlap_VOCFT": 0.1,
-#     "overlap_VitLarge": 1,
-#     "overlap_InstVoc": 1,
-#     "weight_InstVoc": 8g,
-#     "weight_VOCFT": 1,
-#     "weight_VitLarge": 5,
-#     "large_gpu": True,
-#     "BigShifts": 7,
-#     "vocals_only": False,
-#     "use_VOCFT": False,
-#     "output_format": "FLOAT",
-# }
 
 def model_fn(model_dir):
     """Load the ensemble model for music separation."""
@@ -36,46 +18,53 @@ def model_fn(model_dir):
     model = EnsembleDemucsMDXMusicSeparationModel(model_dir=model_dir)
     return model
 
+def download_file_from_s3(s3_path):
+    s3 = boto3.client('s3')
+    bucket_name, key = s3_path.replace("s3://", "").split("/", 1)
+    temp_dir = tempfile.mkdtemp()
+    local_filename = os.path.join(temp_dir, os.path.basename(key))
+    s3.download_file(bucket_name, key, local_filename)
+    return local_filename
+
+def upload_file_to_s3(local_path, bucket_name, s3_path):
+    s3 = boto3.client('s3')
+    s3.upload_file(local_path, bucket_name, s3_path)
+    return f"s3://{bucket_name}/{s3_path}"
 
 def input_fn(request_body, request_content_type):
     """Preprocess incoming audio data and additional parameters before prediction."""
     logger.info('Received request_body: %s', request_body[:100])  # Print first 100 chars for debugging
     logger.info('Received request_content_type: %s', request_content_type)
     
+    
+    # Ensure the correct content type is being used
+
     # Ensure the correct content type is being used
     if request_content_type != 'application/json':
         logger.error('Unsupported content type: %s', request_content_type)
         raise ValueError(f'Unsupported content type: {request_content_type}')
-    
+
     try:
-        # Parse the JSON body to extract audio data and parameters
         input_data = json.loads(request_body)
         logger.info('Parsed input data successfully.')
         
+        
+        # Additional debugging to ensure input_data is as expected
+
         # Additional debugging to ensure input_data is as expected
         if not isinstance(input_data, dict):
             logger.error('Parsed input data is not a dictionary. Actual type: %s', type(input_data))
             raise ValueError('Parsed input data is not a dictionary.')
-        
-        audio_data_base64 = input_data['audio']
-        audio_data = base64.b64decode(audio_data_base64)
-        
-        # Load the audio with soundfile from bytes
-        with io.BytesIO(audio_data) as audio_file:
-            audio, sample_rate = sf.read(audio_file, dtype='float32', always_2d=True)
-            # Transpose the audio to shape (channels, samples) to make it compatible with librosa's format if needed
-            audio = audio.T
-            # if sample_rate != 44100:
-            #     audio = librosa.resample(audio, sample_rate, 44100)
-            #     sample_rate = 44100
-        # Ensure audio is in a compatible shape for further processing, especially if it's mono
-        if audio.shape[0] == 1:
-            # If mono, duplicate the channel to make it stereo
+
+        # Assuming 's3_audio_path' key contains the S3 path of the audio file
+        s3_audio_path = input_data['s3_audio_path']
+        local_audio_path = download_file_from_s3(s3_audio_path)
+        audio, sample_rate = librosa.load(local_audio_path, sr=44100, mono=False)
+        if len(audio.shape) == 1:
             audio = np.stack([audio, audio], axis=0)
-        
-        # Combine audio data and additional parameters in the returned dictionary
+
         return {
-            'audio': audio, 
+            'audio': audio,
             'sr': sample_rate,
             'options': input_data.get('options', {
                                         "overlap_demucs": 0.1,
@@ -93,55 +82,31 @@ def input_fn(request_body, request_content_type):
                                     })
         }
     except Exception as e:
-        logger.error(f"Error processing input data: {e},\nrequest_body: {request_body}, request_content_type: {request_content_type}\n")
+        logger.error(f"Error processing input data: {e}, request_body: {request_body}, request_content_type: {request_content_type}")
         raise
 
-
 def predict_fn(input_data, model):
-    """Run prediction on preprocessed audio data."""
     logger.info('Performing separation on audio data')
     audio, sample_rate, options = input_data['audio'], input_data['sr'], input_data['options']
     result, sample_rates, instruments = model.separate_music_file(audio.T, sample_rate, options)
     
     return result, sample_rates, instruments, options
 
-
-def output_fn(prediction, accept='application/octet-stream'):
-    """
-    Process the prediction output to audio buffers and store them in a dictionary.
-    """
+def output_fn(prediction, accept='application/json'):
     result, sample_rates, instruments, options = prediction
-    audio_buffers = {}
-    
+    bucket_name = options['output_bucket']
+    s3_folder_path = 'outputs'
+    s3_paths = []
+
     for instrum in instruments:
-        output_name = '_{}.wav'.format(instrum)
-        buffer = io.BytesIO()
-        sf.write(buffer, result[instrum], sample_rates[instrum], format='WAV')
-        buffer.seek(0)
-        audio_buffers[output_name] = buffer
+        output_name = f'{instrum}.wav'
+        local_path = os.path.join(tempfile.mkdtemp(), output_name)
+        sf.write(local_path, result[instrum], sample_rates[instrum], format='WAV')
+        s3_path = f"{s3_folder_path}/{output_name}"
+        s3_uri = upload_file_to_s3(local_path, bucket_name, s3_path)
+        s3_paths.append(s3_uri)
 
-    # Instrumental part 1
-    if 'instrum' in result:
-        inst = result['instrum']
-        output_name = '_instrum.wav'
-        buffer = io.BytesIO()
-        sf.write(buffer, inst, sample_rates.get('instrum', 44100), format='WAV')
-        buffer.seek(0)
-        audio_buffers[output_name] = buffer
-
-    # Instrumental part 2, if vocals_only option is False
-    if not options['vocals_only'] and all(x in result for x in ['bass', 'drums', 'other']):
-        inst2 = result['bass'] + result['drums'] + result['other']
-        output_name = '_instrum2.wav'
-        buffer = io.BytesIO()
-        sf.write(buffer, inst2, sample_rates.get('bass', 44100), format='WAV')  # Assuming same SR for all
-        buffer.seek(0)
-        audio_buffers[output_name] = buffer
-
-    if accept == 'application/octet-stream':
-        # This example simply returns the dictionary of buffers
-        # Adapt this as needed for your use case, e.g., packaging multiple files, handling accept types
-        return audio_buffers
+    if accept == 'application/json':
+        return {"out_paths": s3_paths}
     else:
         raise ValueError(f"Unsupported accept header: {accept}")
-
