@@ -370,6 +370,15 @@ class EnsembleDemucsMDXMusicSeparationModel:
         self.model_vl = self.model_vl.to(device)
         self.model_vl.eval()
 
+        if device == 'cpu':
+            chunk_size = 200000000
+            providers = ["CPUExecutionProvider"]
+        else:
+            chunk_size = 1000000
+            providers = ["CUDAExecutionProvider"]
+
+        self.chunk_size = chunk_size
+
         # VOCFT init
         print("Loading VOCFT into memory")
         self.mdx_models1 = get_models('tdf_extra', load=False, device=device, vocals_model_type=2)
