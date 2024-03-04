@@ -53,7 +53,7 @@ def input_fn(request_body, request_content_type):
         if not isinstance(input_data, dict):
             raise ValueError('Parsed input data is not a dictionary.')
         
-        audio = audio, sample_rate = librosa.load(request_body['audio'], sr=44100, mono=False)
+        audio = audio, sample_rate = librosa.load(input_data['audio'], sr=44100, mono=False)
         if len(audio.shape) == 1:
             audio = np.stack([audio, audio], axis=0)
         
