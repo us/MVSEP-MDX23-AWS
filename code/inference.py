@@ -8,6 +8,7 @@ import soundfile as sf
 import numpy as np
 from main import EnsembleDemucsMDXMusicSeparationModel
 
+os.environ['DEFAULT_TS_RESPONSE_TIMEOUT'] = 600
 # Initialize logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)  # Set to DEBUG for development, INFO for production
