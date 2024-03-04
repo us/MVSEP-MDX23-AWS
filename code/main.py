@@ -424,7 +424,6 @@ class EnsembleDemucsMDXMusicSeparationModel:
         separated_music_arrays = {}
         output_sample_rates = {}
         audio = torch.from_numpy(mixed_sound_array.T).type('torch.FloatTensor').to(self.device)
-        
         overlap_demucs = options['overlap_demucs']
         overlap_MDX = options['overlap_VOCFT']
         shifts = 0
