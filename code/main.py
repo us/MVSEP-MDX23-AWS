@@ -331,7 +331,7 @@ class EnsembleDemucsMDXMusicSeparationModel:
             chunk_size = 200000000
             providers = ["CPUExecutionProvider"]
         else:
-            chunk_size = 1000000
+            chunk_size = 500000
             providers = ["CUDAExecutionProvider"]
 
         self.chunk_size = chunk_size
