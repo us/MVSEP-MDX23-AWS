@@ -18,9 +18,11 @@
 ARG REGION=us-east-1
 
 # SageMaker PyTorch image for INFERENCE
-FROM 763104351884.dkr.ecr.us-east-1.amazonaws.com/pytorch-inference:2.0.1-gpu-py310-cu118-ubuntu20.04-ec2
-LABEL com.amazonaws.sagemaker.capabilities.multi-models=true
+# FROM 763104351884.dkr.ecr.us-east-1.amazonaws.com/pytorch-inference:2.0.1-gpu-py310-cu118-ubuntu20.04-ec2
+
+FROM 763104351884.dkr.ecr.us-east-1.amazonaws.com/pytorch-inference:1.8.0-gpu-py3
 ENV PATH="/opt/ml/code:${PATH}"
+LABEL com.amazonaws.sagemaker.capabilities.multi-models=true
 
 # /opt/ml and all subdirectories are utilized by SageMaker, we use the /code subdirectory to store our user code.
 COPY /code /opt/ml/code
