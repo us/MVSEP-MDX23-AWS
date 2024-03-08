@@ -1,7 +1,9 @@
+import datetime
 import json
 import logging
 import os
 import tempfile
+import uuid
 import boto3
 import librosa
 import soundfile as sf
@@ -72,6 +74,8 @@ def input_fn(request_body, request_content_type):
             'audio': audio,
             'sr': sample_rate,
             'options': input_data.get('options', {
+                                        "s3_output_bucket": "vocalremoverbucket.us.east.1.only",
+                                        "s3_sagemaker_outputs_folder_path": "sagemaker_default_outputs",
                                         "overlap_demucs": 0.1,
                                         "overlap_VOCFT": 0.1,
                                         "overlap_VitLarge": 1,
@@ -100,8 +104,13 @@ def predict_fn(input_data, model):
 
 def output_fn(prediction, accept='application/json'):
     result, sample_rates, instruments, options = prediction
-    bucket_name = options['output_bucket']
-    s3_folder_path = 'outputs'
+    bucket_name = options['s3_output_bucket']
+    s3_sagemaker_outputs_folder_path = options['s3_sagemaker_outputs_folder_path']
+    # create unique s3_folder_path with using uuid etc.
+    unique_id = str(uuid.uuid4())
+    timestamp = datetime.utcnow().strftime('%Y-%m-%d-%H-%M-%S')
+    s3_folder_path = os.path.join(s3_sagemaker_outputs_folder_path, f"{timestamp}-{unique_id}")
+    
     s3_paths = []
     logger.info(f"Uploading separated audio to S3 bucket: {bucket_name}, folder: {s3_folder_path}")
     for instrum in instruments:
