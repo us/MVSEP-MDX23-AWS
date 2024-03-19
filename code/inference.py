@@ -117,7 +117,16 @@ def output_fn(prediction, accept='application/json'):
         output_name = f'{instrum}.wav'
         local_path = os.path.join(tempfile.mkdtemp(), output_name)
         sf.write(local_path, result[instrum], sample_rates[instrum], format='WAV')
-        s3_path = f"{s3_folder_path}/{output_name}"
+        s3_path = f"{s3_folder_path}/wav/{output_name}"
+        s3_uri = upload_file_to_s3(local_path, bucket_name, s3_path)
+        s3_paths.append(s3_uri)
+        logger.info(f"Uploaded {instrum} to S3: {s3_uri}")
+
+    for instrum in instruments:
+        output_name = f'{instrum}.mp3'
+        local_path = os.path.join(tempfile.mkdtemp(), output_name)
+        sf.write(local_path, result[instrum], sample_rates[instrum], format='MP3')
+        s3_path = f"{s3_folder_path}/mp3/{output_name}"
         s3_uri = upload_file_to_s3(local_path, bucket_name, s3_path)
         s3_paths.append(s3_uri)
         logger.info(f"Uploaded {instrum} to S3: {s3_uri}")
