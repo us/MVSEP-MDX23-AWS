@@ -604,7 +604,7 @@ class EnsembleDemucsMDXMusicSeparationModel:
         if options['vocals_only'] is False:
             instruments = ['bass', 'drums', 'other', 'vocals']
         else:
-            instruments = ['vocals']
+            instruments = ['vocals', 'instrum']
 
         return separated_music_arrays, output_sample_rates, instruments
 
