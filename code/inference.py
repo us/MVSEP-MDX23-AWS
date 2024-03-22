@@ -115,6 +115,9 @@ def output_fn(prediction, accept='application/json'):
     
     s3_paths = []
     logger.info(f"Uploading separated audio to S3 bucket: {bucket_name}, folder: {s3_folder_path}")
+    logger.info(f"results: {result}")
+    logger.info(f"sample rates: {sample_rates}")
+    logger.info(f"instruments: {instruments}")
     for instrum in instruments:
         output_name = f'{instrum}.{output_type}'
         local_path = os.path.join(tempfile.mkdtemp(), output_name)

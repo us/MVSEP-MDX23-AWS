@@ -602,6 +602,7 @@ class EnsembleDemucsMDXMusicSeparationModel:
         # instrum
         separated_music_arrays['instrum'] = instrum
         output_sample_rates['instrum'] = sample_rate
+        
         if options['vocals_only'] is False:
             instruments = ['bass', 'drums', 'other', 'vocals']
         else:
