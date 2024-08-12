@@ -21,3 +21,5 @@ model_vocals_segm_models_sdr_9.77.ckpt
 config_vocals_segm_models.yaml
 sagemaker_v2.tar.gz
 model_2_stem_061321.yaml
+*.DS_Store
+code/.DS_Store

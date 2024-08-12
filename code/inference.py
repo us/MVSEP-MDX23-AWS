@@ -9,6 +9,7 @@ import librosa
 import soundfile as sf
 import numpy as np
 from main import EnsembleDemucsMDXMusicSeparationModel
+from moviepy.editor import VideoFileClip
 
 # os.environ['DEFAULT_TS_RESPONSE_TIMEOUT'] = 600
 # Initialize logging
@@ -40,9 +41,6 @@ def input_fn(request_body, request_content_type):
     """Preprocess incoming audio data and additional parameters before prediction."""
     logger.info('Received request_body: %s', request_body[:100])  # Print first 100 chars for debugging
     logger.info('Received request_content_type: %s', request_content_type)
-    
-    
-    # Ensure the correct content type is being used
 
     # Ensure the correct content type is being used
     if request_content_type != 'application/json':
@@ -53,8 +51,6 @@ def input_fn(request_body, request_content_type):
         input_data = json.loads(request_body)
         logger.info('Parsed input data successfully.')
         
-        
-        # Additional debugging to ensure input_data is as expected
 
         # Additional debugging to ensure input_data is as expected
         if not isinstance(input_data, dict):
@@ -64,12 +60,31 @@ def input_fn(request_body, request_content_type):
         # Assuming 's3_audio_path' key contains the S3 path of the audio file
         s3_audio_path = input_data['s3_audio_path']
         local_audio_path = download_file_from_s3(s3_audio_path)
-        audio, sample_rate = librosa.load(local_audio_path, sr=44100, mono=False)
+        
+        # Check if the file is an MP4 and convert it using MoviePy if necessary
+        if local_audio_path.lower().endswith('.mp4') or local_audio_path.lower().endswith('.m4a'):
+            logger.info('Processing MP4 file using MoviePy.')
+            output_audio_path = "temp_audio.wav"
+            video = VideoFileClip(local_audio_path)
+            video.audio.write_audiofile(output_audio_path, fps=44100)
+            video.close()
+
+            # Load the audio file using librosa for further processing
+            audio, sample_rate = librosa.load(output_audio_path, sr=44100, mono=False)
+
+            # Remove the temporary audio file after processing
+            os.remove(output_audio_path)
+        else:
+            # Load audio directly if it's not an MP4
+            audio, sample_rate = librosa.load(local_audio_path, sr=44100, mono=False)
+
         logger.info(f"Loaded audio from {s3_audio_path} with shape: {audio.shape}, sample_rate: {sample_rate}")
+
+        # Ensure stereo format
         if len(audio.shape) == 1:
             audio = np.stack([audio, audio], axis=0)
             logger.info(f"Reshaped audio to: {audio.shape}")
-        
+
         return {
             'audio': audio,
             'sr': sample_rate,
