@@ -107,7 +107,7 @@ def input_fn(request_body, request_content_type):
                                     })
         }
     except Exception as e:
-        logger.error(f"Error processing input data: {e}, request_body: {request_body}, request_content_type: {request_content_type}")
+        logger.error(f"Error processing input data: {e}, request_body: {request_body}, request_content_type: {request_content_type} {e}")
         raise
 
 def predict_fn(input_data, model):
