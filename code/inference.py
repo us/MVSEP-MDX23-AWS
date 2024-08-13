@@ -64,7 +64,8 @@ def input_fn(request_body, request_content_type):
         # Check if the file is an MP4 and convert it using MoviePy if necessary
         if local_audio_path.lower().endswith('.mp4') or local_audio_path.lower().endswith('.m4a'):
             logger.info('Processing MP4 file using MoviePy.')
-            output_audio_path = "temp_audio.wav"
+            output_audio_name = "temp_audio.wav"
+            output_audio_path = os.path.join(tempfile.mkdtemp(), output_audio_name)
             video = VideoFileClip(local_audio_path)
             video.audio.write_audiofile(output_audio_path, fps=44100)
             video.close()
