@@ -66,7 +66,7 @@ def input_fn(request_body, request_content_type):
             logger.info('Processing MP4 file using MoviePy.')
             output_audio_name = "temp_audio.wav"
             output_audio_path = os.path.join(tempfile.mkdtemp(), output_audio_name)
-            video = VideoFileClip(local_audio_path)
+            video = VideoFileClip(local_audio_path, fps_source='tbr')
             video.audio.write_audiofile(output_audio_path, fps=44100)
             video.close()
 
