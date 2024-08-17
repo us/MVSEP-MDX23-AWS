@@ -10,6 +10,10 @@ import soundfile as sf
 import numpy as np
 from main import EnsembleDemucsMDXMusicSeparationModel
 from moviepy.editor import VideoFileClip
+import static_ffmpeg
+
+static_ffmpeg.add_paths()  # blocks until files are downloaded
+from pydub import AudioSegment
 
 # os.environ['DEFAULT_TS_RESPONSE_TIMEOUT'] = 600
 # Initialize logging
@@ -62,7 +66,21 @@ def input_fn(request_body, request_content_type):
         local_audio_path = download_file_from_s3(s3_audio_path)
         
         # Check if the file is an MP4 and convert it using MoviePy if necessary
-        if local_audio_path.lower().endswith('.mp4') or local_audio_path.lower().endswith('.m4a'):
+        if local_audio_path.lower().endswith('.m4a'):
+            logger.info('Processing M4A file using pydub.')
+            output_audio_name = "temp_audio.wav"
+            output_audio_path = os.path.join(tempfile.mkdtemp(), output_audio_name)
+            
+            # Use pydub to handle m4a files
+            audio_segment = AudioSegment.from_file(local_audio_path, format="m4a")
+            audio_segment.export(output_audio_path, format="wav", parameters=["-ac", "2", "-ar", "44100"])  # Stereo, 44.1 kHz
+
+            # Load the audio file using librosa for further processing
+            audio, sample_rate = librosa.load(output_audio_path, sr=44100, mono=False)
+
+            # Remove the temporary audio file after processing
+            os.remove(output_audio_path)
+        elif local_audio_path.lower().endswith('.mp4') or local_audio_path.lower().endswith('.m4a'):
             logger.info('Processing MP4 file using MoviePy.')
             output_audio_name = "temp_audio.wav"
             output_audio_path = os.path.join(tempfile.mkdtemp(), output_audio_name)

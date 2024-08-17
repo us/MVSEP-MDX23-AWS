@@ -13,3 +13,5 @@ samplerate==0.1.0
 segmentation_models_pytorch==0.3.3
 tqdm
 moviepy
+static-ffmpeg
+pydub
