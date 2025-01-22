@@ -2,6 +2,7 @@
 
 # Set image name
 IMAGE_NAME="mvsep-mdx23-runpod"
+DOCKER_HUB_USER="dendendendi"
 TAG="latest"
 
 echo "Building Docker image: $IMAGE_NAME:$TAG"
@@ -13,9 +14,9 @@ DOCKER_BUILDKIT=1 docker build \
     -t $IMAGE_NAME:$TAG .
 
 echo "Tagging image..."
-docker tag $IMAGE_NAME:$TAG $USER/$IMAGE_NAME:$TAG
+docker tag $IMAGE_NAME:$TAG $DOCKER_HUB_USER/$IMAGE_NAME:$TAG
 
 echo "Pushing image to Docker Hub..."
-docker push $USER/$IMAGE_NAME:$TAG
+docker push $DOCKER_HUB_USER/$IMAGE_NAME:$TAG
 
-echo "Done! Image pushed to Docker Hub as $USER/$IMAGE_NAME:$TAG"
+echo "Done! Image pushed to Docker Hub as $DOCKER_HUB_USER/$IMAGE_NAME:$TAG"
