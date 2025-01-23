@@ -21,7 +21,8 @@ MODEL = None
 def init_model():
     global MODEL
     if MODEL is None:
-        model_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "models")
+        # Use absolute path that matches Dockerfile
+        model_dir = "/workspace/models"
         MODEL = model_fn(model_dir)
     return MODEL
 
